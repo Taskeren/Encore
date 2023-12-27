@@ -1,0 +1,15 @@
+name: "Encore"
+main: "cn.taskeren.encore.Encore"
+description: "A Paper-based plugin playground for multiple usages."
+author: "Taskeren"
+version: "${version}"
+api-version: "1.19"
+depend:
+  - ProtocolLib
+
+commands:
+  encore:
+    description: "Encore!"
+    usage: "/encore help"
+    permission: op
+    permission-message: ":3"

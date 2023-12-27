@@ -15,13 +15,12 @@ public class IgnoreAnvilRepairCap extends Feature {
 
 	public IgnoreAnvilRepairCap(Encore encore) {
 		super("ignore-anvil-repair-cap", encore);
+		registerAsListener();
+		syncEnablingStatus();
 	}
 
 	@Override
 	public void onEncoreEnabled() {
-		loadIsEnabledFromConfiguration(true);
-		registerListener();
-
 		// listen to the window close packets, and re-sync the gamemode
 		getEncore().getProtocolManager().addPacketListener(new PacketAdapter(
 				getEncore(),
@@ -34,12 +33,6 @@ public class IgnoreAnvilRepairCap extends Feature {
 				getEncore().getProtocolManager().sendServerPacket(player, getGameModeChangePacket(player.getGameMode()));
 			}
 		});
-	}
-
-	@Override
-	protected void onEnableChanged(boolean newValue) {
-		// sync to config
-		setEnabledInConfig(newValue);
 	}
 
 	@EventHandler

@@ -7,6 +7,7 @@ import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -14,7 +15,6 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
@@ -68,18 +68,38 @@ public final class Encore extends JavaPlugin implements CommandExecutor, TabComp
 
 		protocolManager = ProtocolLibrary.getProtocolManager();
 
-		getFeatures().forEach(Feature::onEncoreEnabled);
+		getFeatures().forEach(Feature::onEncoreEnabledInternal);
 	}
 
 	@Override
 	public void onDisable() {
-		getFeatures().forEach(Feature::onEncoreDisabled);
+		getFeatures().forEach(Feature::onEncoreDisabledInternal);
 	}
 
 	@Override
 	public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
 		if(args.length > 0) {
 			var firstArg = args[0];
+			if(firstArg.equalsIgnoreCase("help")) {
+				var message = Component.text()
+						.append(Component.text("===[ Encore Help ]===", NamedTextColor.YELLOW, TextDecoration.BOLD))
+						.append(Component.newline())
+						.append(Component.text("/encore help", NamedTextColor.YELLOW))
+						.append(Component.text(" - Show this help message", NamedTextColor.GRAY))
+						.append(Component.newline())
+						.append(Component.text("/encore feature", NamedTextColor.YELLOW))
+						.append(Component.text(" - Show all features", NamedTextColor.GRAY))
+						.append(Component.newline())
+						.append(Component.text("/encore feature <feature>", NamedTextColor.YELLOW))
+						.append(Component.text(" - Show the status of the feature", NamedTextColor.GRAY))
+						.append(Component.newline())
+						.append(Component.text("/encore feature <feature> <true|false>", NamedTextColor.YELLOW))
+						.append(Component.text(" - Enable/disable the feature", NamedTextColor.GRAY))
+						.append(Component.newline())
+						.append(Component.text("/encore reload-config", NamedTextColor.YELLOW))
+						.append(Component.text(" - Reload all configurations", NamedTextColor.GRAY));
+				sender.sendMessage(message);
+			}
 			if(firstArg.equalsIgnoreCase("feature")) {
 				if(args.length > 1) {
 					var secondArg = args[1];
@@ -89,26 +109,47 @@ public final class Encore extends JavaPlugin implements CommandExecutor, TabComp
 							var thirdArg = args[2];
 							var thirdArgBoolean = Boolean.parseBoolean(thirdArg);
 							feature.setEnabled(thirdArgBoolean);
-							sender.sendMessage(Component.text("Updated " + feature.name + " = " + thirdArgBoolean));
+							var message = Component.text()
+									.append(Component.text("Set feature "))
+									.append(Component.text(feature.name, NamedTextColor.YELLOW))
+									.append(Component.text(" to "))
+									.append(Component.text(
+											thirdArgBoolean ? "enabled" : "disabled",
+											thirdArgBoolean ? NamedTextColor.GREEN : NamedTextColor.RED
+									));
+							sender.sendMessage(message);
 						} else {
-							sender.sendMessage(Component.text(feature.name + " = " + feature.isEnabled()));
+							var message = Component.text()
+									.append(Component.text("Feature "))
+									.append(Component.text(feature.name, NamedTextColor.YELLOW))
+									.append(Component.text(" is "))
+									.append(Component.text(
+											feature.isEnabled() ? "enabled" : "disabled",
+											feature.isEnabled() ? NamedTextColor.GREEN : NamedTextColor.RED
+									));
+							sender.sendMessage(message);
 						}
 					} else {
 						sender.sendMessage(Component.text("Unknown feature: " + secondArg, NamedTextColor.RED));
 					}
 				} else {
-					sender.sendMessage(Component.text("Features: " + String.join(", ", featureNames)));
+					var message = Component.text()
+							.append(Component.text("Features: ", NamedTextColor.GRAY))
+							.append(Component.text(String.join(", ", featureNames), NamedTextColor.YELLOW));
+					sender.sendMessage(message);
 				}
 				return true;
 			}
 			if(firstArg.equalsIgnoreCase("reload-config")) {
 				// showing starting
 				sender.sendMessage(Component.text("Reloading configurations", NamedTextColor.GRAY));
+				// firstly, reload config file
+				reloadConfig();
 				// doing the actual logics
 				AtomicInteger exceptionCounterReference = new AtomicInteger(0);
 				getFeatures().forEach(feature -> {
 					try {
-						feature.onEncoreReload();
+						feature.onEncoreReloadInternal();
 					} catch(Exception ex) {
 						var message = Component.text()
 								.append(Component.text("Error reloading configuration for "))
@@ -133,9 +174,9 @@ public final class Encore extends JavaPlugin implements CommandExecutor, TabComp
 	}
 
 	@Override
-	public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+	public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
 		if(args.length == 1) {
-			return List.of("feature", "reload-config");
+			return List.of("help", "feature", "reload-config");
 		} else if(args.length == 2) {
 			if(args[0].equalsIgnoreCase("feature")) {
 				return List.of(featureNames);
@@ -147,7 +188,6 @@ public final class Encore extends JavaPlugin implements CommandExecutor, TabComp
 				}
 			}
 		}
-		return super.onTabComplete(sender, command, alias, args);
+		return List.of();
 	}
-
 }

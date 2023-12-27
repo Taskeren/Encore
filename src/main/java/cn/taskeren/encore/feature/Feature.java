@@ -1,29 +1,38 @@
 package cn.taskeren.encore.feature;
 
 import cn.taskeren.encore.Encore;
+import cn.taskeren.encore.util.ToBeOverriden;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.Listener;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 public abstract class Feature implements Listener {
 
 	public final String name;
 	public final Encore encore;
 
-	private boolean enabled = false;
+	private boolean enabled;
+
+	private boolean needRegisterListeners = false;
+	private boolean alwaysSyncEnablingStatus = false;
 
 	public Feature(final String name, final Encore encore) {
+		this(name, true, encore);
+	}
+
+	public Feature(final String name, final boolean enabled, final Encore encore) {
 		this.name = name;
 		this.encore = encore;
+		this.enabled = enabled;
 		init();
 	}
 
 	// region Getters and Setters
 
-	protected final Encore getEncore() {
+	@NotNull
+	public final Encore getEncore() {
 		return encore;
 	}
 
@@ -31,21 +40,7 @@ public abstract class Feature implements Listener {
 		return getEncore().getConfig();
 	}
 
-	protected final Boolean isEnabledInConfig(boolean defaultValue) {
-		return getConfig().getBoolean("feature." + name, defaultValue);
-	}
-
-	protected final void setEnabledInConfig(boolean enabled) {
-		getConfig().set("feature." + name, enabled);
-		getEncore().saveConfig();
-	}
-
 	protected final Logger getLogger() {
-		var encoreLoggerName = getEncore().getLogger().getName();
-		return LogManager.getLogManager().getLogger(encoreLoggerName + "|" + name);
-	}
-
-	protected final org.slf4j.Logger getSLF4JLogger() {
 		var encoreLoggerName = getEncore().getSLF4JLogger().getName();
 		return LoggerFactory.getLogger(encoreLoggerName + "|" + name);
 	}
@@ -54,24 +49,33 @@ public abstract class Feature implements Listener {
 
 	// region Initialization Helpers
 
-	protected final void registerListener() {
-		getEncore().getServer().getPluginManager().registerEvents(this, getEncore());
+	protected final void registerAsListener() {
+		needRegisterListeners = true;
+	}
+
+	protected final void syncEnablingStatus() {
+		alwaysSyncEnablingStatus = true;
 	}
 
 	protected final void loadIsEnabledFromConfiguration(boolean defaultValue) {
-		setEnabled(isEnabledInConfig(defaultValue));
+		setEnabled(getIsEnabledFromConfig(defaultValue));
+	}
+
+	protected final Boolean getIsEnabledFromConfig(boolean defaultValue) {
+		return getConfig().getBoolean("feature." + name, defaultValue);
+	}
+
+	protected final void setIsEnabledToConfig(boolean enabled) {
+		getConfig().set("feature." + name, enabled);
+		getEncore().saveConfig();
 	}
 
 	// endregion
 
-	protected void init() {
-		// no-op
-	}
-
 	public final void setEnabled(boolean enabled) {
 		if(this.enabled != enabled) {
 			this.enabled = enabled;
-			onEnableChanged(enabled);
+			onEnableChangedInternal(enabled);
 		}
 	}
 
@@ -79,20 +83,53 @@ public abstract class Feature implements Listener {
 		return enabled;
 	}
 
-	protected void onEnableChanged(boolean newValue) {
-		// no-op
+	// region to be called internal
+
+	public final void onEncoreEnabledInternal() {
+		onEncoreEnabled();
+		if(needRegisterListeners) {
+			getEncore().getServer().getPluginManager().registerEvents(this, getEncore());
+		}
+		if(alwaysSyncEnablingStatus) {
+			setEnabled(getIsEnabledFromConfig(enabled));
+		}
 	}
 
-	public void onEncoreEnabled() {
-		// no-op
+	public final void onEncoreDisabledInternal() {
+		onEncoreDisabled();
 	}
 
-	public void onEncoreDisabled() {
-		// no-op
+	public final void onEncoreReloadInternal() {
+		onEncoreReload();
 	}
 
-	public void onEncoreReload() {
-		// no-op
+	private void onEnableChangedInternal(boolean newValue) {
+		onFeatureEnablingStatusChange(newValue);
+		if(alwaysSyncEnablingStatus) {
+			setIsEnabledToConfig(newValue);
+		}
+	}
+
+	// endregion
+
+	@ToBeOverriden
+	protected void init() {
+	}
+
+	@ToBeOverriden
+	protected void onEncoreEnabled() {
+	}
+
+	@ToBeOverriden
+	protected void onEncoreDisabled() {
+	}
+
+	@ToBeOverriden
+	protected void onEncoreReload() {
+	}
+
+	@ToBeOverriden
+	protected void onFeatureEnablingStatusChange(boolean newValue) {
 	}
 
 }

@@ -19,6 +19,8 @@ public class BlockMending extends Feature {
 	public BlockMending(Encore encore) {
 		super("block-mending", encore);
 		this.blockingMaterials = new ArrayList<>();
+		registerAsListener();
+		syncEnablingStatus();
 	}
 
 	private static final String CONFIG_BLOCKING_MATERIALS_PATH = "feature.block-mending-materials";
@@ -28,10 +30,10 @@ public class BlockMending extends Feature {
 				.stream().map(Material::getMaterial).toList(); // read config and map to materials
 		// show the config values
 		if(!newBlockingMaterials.isEmpty()) {
-			getSLF4JLogger().info("Read block-mending materials from config:");
-			newBlockingMaterials.forEach(m -> getSLF4JLogger().info("- {}", m));
+			getLogger().info("Read block-mending materials from config:");
+			newBlockingMaterials.forEach(m -> getLogger().info("- {}", m));
 		} else {
-			getSLF4JLogger().info("Read block-mending materials is empty! Please consider to fill in the values in config.yml at '"+CONFIG_BLOCKING_MATERIALS_PATH+"'.");
+			getLogger().info("Read block-mending materials is empty! Please consider to fill in the values in config.yml at '"+CONFIG_BLOCKING_MATERIALS_PATH+"'.");
 		}
 		// replace the list
 		this.blockingMaterials = newBlockingMaterials;
@@ -48,20 +50,12 @@ public class BlockMending extends Feature {
 
 	@Override
 	public void onEncoreEnabled() {
-		loadIsEnabledFromConfiguration(true);
-		registerListener();
-
 		loadConfig();
 	}
 
 	@Override
 	public void onEncoreReload() {
 		loadConfig();
-	}
-
-	@Override
-	protected void onEnableChanged(boolean newValue) {
-		setEnabledInConfig(newValue);
 	}
 
 	@EventHandler

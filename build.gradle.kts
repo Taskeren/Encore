@@ -66,9 +66,6 @@ tasks {
 	runServer {
 		minecraftVersion(minecraft_version)
 
-		// add debug agentlib
-		jvmArgs("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
-
 		downloadPlugins {
 			hangar("ProtocolLib", protocol_lib_version)
 		}

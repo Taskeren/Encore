@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2024 Taskeren and Contributors - All Rights Reserved.
+ */
+
 package cn.taskeren.encore;
 
 import cn.taskeren.encore.feature.BlockMending;
@@ -32,7 +36,7 @@ public final class Encore extends JavaPlugin implements CommandExecutor, TabComp
 	};
 	private ProtocolManager protocolManager;
 
-	private final String[] featureNames = Arrays.stream(features).map(x -> x.name).toArray(String[]::new);
+	private final String[] featureNames = getFeatures().map(x -> x.name).toArray(String[]::new);
 
 	public Encore() {
 	}
@@ -54,6 +58,10 @@ public final class Encore extends JavaPlugin implements CommandExecutor, TabComp
 	@NotNull
 	public ProtocolManager getProtocolManager() {
 		return Objects.requireNonNull(protocolManager, "Too early to access the protocol manager!");
+	}
+
+	public static Encore getInstance() {
+		return JavaPlugin.getPlugin(Encore.class);
 	}
 
 	@Override

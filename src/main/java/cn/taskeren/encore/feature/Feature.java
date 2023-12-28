@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2024 Taskeren and Contributors - All Rights Reserved.
+ */
+
 package cn.taskeren.encore.feature;
 
 import cn.taskeren.encore.Encore;
@@ -22,10 +26,10 @@ public abstract class Feature implements Listener {
 		this(name, true, encore);
 	}
 
-	public Feature(final String name, final boolean enabled, final Encore encore) {
+	public Feature(final String name, final boolean defaultIsEnabled, final Encore encore) {
 		this.name = name;
 		this.encore = encore;
-		this.enabled = enabled;
+		this.enabled = defaultIsEnabled;
 		init();
 	}
 
@@ -49,16 +53,26 @@ public abstract class Feature implements Listener {
 
 	// region Initialization Helpers
 
+	/**
+	 * Register this feature as a listener.
+	 * <p>
+	 * The actual register invoke will be in {@link #onEncoreEnabledInternal()}.
+	 */
 	protected final void registerAsListener() {
 		needRegisterListeners = true;
 	}
 
+	/**
+	 * Enable the synchronization of enabling status between config and memory.
+	 * <p>
+	 * The actual sync invoke will be firstly in {@link #onEncoreEnabledInternal()}, and
+	 * very time it changes, it will be synced in {@link #onEnableChangedInternal(boolean)}.
+	 * <p>
+	 * If the configuration has no enabling status value, it will be set to the default value, which you can
+	 * change it in {@link Feature#Feature(String, boolean, Encore)}.
+	 */
 	protected final void syncEnablingStatus() {
 		alwaysSyncEnablingStatus = true;
-	}
-
-	protected final void loadIsEnabledFromConfiguration(boolean defaultValue) {
-		setEnabled(getIsEnabledFromConfig(defaultValue));
 	}
 
 	protected final Boolean getIsEnabledFromConfig(boolean defaultValue) {
